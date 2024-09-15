@@ -1,4 +1,4 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, marker::PhantomData};
 
 use anyhow::{Context, Result};
 use wgpu::{
@@ -6,23 +6,29 @@ use wgpu::{
     RenderPassDescriptor, RenderPipeline, RequestAdapterOptions, Surface, SurfaceConfiguration,
     SurfaceTarget, TextureView,
 };
-struct Renderer<'window> {
-    instance: Instance,
-    surface: Surface<'window>,
-    device: Device,
-    queue: Queue,
-    pipeline: RenderPipeline,
-    config: SurfaceConfiguration,
-}
 
-struct RenderCommandEncoder<'encoder> {
+struct Idle;
+struct InPass;
+
+struct RenderCommandEncoder<'a, State = Idle> {
     encoder: wgpu::CommandEncoder,
-    active_rpass: Option<RenderPass<'encoder>>,
+    rpass: Option<RenderPass<'a>>,
+    marker: PhantomData<State>,
 }
 
 impl RenderCommandEncoder<'_> {
-    fn create(mut encoder: CommandEncoder, view: &TextureView) -> Self {
-        let rpass = encoder.begin_render_pass(&RenderPassDescriptor {
+    fn create(encoder: CommandEncoder) -> Self {
+        Self {
+            encoder,
+            rpass: None,
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<'encoder> RenderCommandEncoder<'encoder, Idle> {
+    fn begin_pass(&'encoder mut self, view: &TextureView) {
+        let rpass = self.encoder.begin_render_pass(&RenderPassDescriptor {
             label: None,
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                 view,
@@ -36,13 +42,27 @@ impl RenderCommandEncoder<'_> {
             timestamp_writes: None,
             occlusion_query_set: None,
         });
-        Self {
-            encoder,
-            active_rpass: Some(rpass),
-        }
+        self.rpass = Some(rpass);
+    }
+}
+
+impl<'encoder> RenderCommandEncoder<'encoder, InPass> {
+    fn draw_triangle(&'encoder mut self) {
+        self.rpass.as_mut().unwrap().draw(0..3, 0..1);
     }
 
-    pub fn draw_triangle(&mut self) {}
+    fn end_pass(&'encoder mut self) {
+        self.rpass = None;
+    }
+}
+
+struct Renderer<'window> {
+    instance: Instance,
+    surface: Surface<'window>,
+    device: Device,
+    queue: Queue,
+    pipeline: RenderPipeline,
+    config: SurfaceConfiguration,
 }
 
 impl<'window> Renderer<'window> {
