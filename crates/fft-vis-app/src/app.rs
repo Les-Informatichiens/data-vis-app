@@ -1,11 +1,11 @@
 use winit::{application::ApplicationHandler, event::WindowEvent, window::Window};
 
 #[derive(Default)]
-pub struct DataVisApp {
+pub struct FFTVisApp {
     window: Option<Window>,
 }
 
-impl ApplicationHandler for DataVisApp {
+impl ApplicationHandler for FFTVisApp {
     fn resumed(&mut self, event_loop: &winit::event_loop::ActiveEventLoop) {
         self.window = Some(
             event_loop

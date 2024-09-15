@@ -1,0 +1,8 @@
+[package]
+name = "fft-vis-app"
+version = "0.1.0"
+edition.workspace = true
+
+[dependencies]
+winit.workspace = true
+anyhow.workspace = true

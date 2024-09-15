@@ -1,8 +1,13 @@
-[package]
+[workspace]
+members = [
+    "crates/*",
+]
+
+[workspace.package]
 name = "data-vis-app"
 version = "0.1.0"
 edition = "2021"
 
-[dependencies]
+[workspace.dependencies]
 anyhow = "1.0.89"
 winit = "0.30.5"
